@@ -1,0 +1,58 @@
+version: '2'
+
+services:
+
+  jc-mysql:
+    image: mysql
+    container_name: jc-mysql
+    ports:
+      - 3306:3306
+    networks:
+      - jc_network
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: symfony
+      MYSQL_USER: symfony
+      MYSQL_PASSWORD: symfony
+    volumes:
+      - ./storage/mysql-datadir:/var/lib/mysql
+
+  jc-php:
+    container_name: jc-php
+    build:
+      context: .
+      dockerfile: docker/php-fpm/Dockerfile
+    networks:
+      - jc_network
+    environment:
+      LOG_LEVEL: info
+      DB_HOST: jc-mysql
+      DB_PORT: 3306
+      DB_NAME: symfony
+      DB_USER: symfony
+      DB_PASSWORD: symfony
+    volumes:
+      - ./logs/php-fpm/:/var/log/php
+      - ./symfony:/var/www/symfony
+
+  jc-nginx:
+    container_name: jc-nginx
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
+    networks:
+      - jc_network
+    environment:
+      FASTCGI_PASS_HOST: jc-php
+      FASTCGI_PASS_PORT: 9000
+    volumes:
+      - ./logs/xdebug/:/var/log/xdebug
+      - ./logs/nginx/:/var/log/nginx
+      - ./symfony:/var/www/symfony
+    ports:
+      - "80:80"
+    command: /usr/local/bin/start.sh
+
+networks:
+  jc_network:
+    driver: bridge

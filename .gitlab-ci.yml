@@ -1,0 +1,119 @@
+image: docker:17.07
+
+services:
+  - docker:17.07-dind
+
+variables:
+  DOCKER_DEV_IMAGE: "eu.gcr.io/$GCLOUD_TEST_PROJECT_NAME/$CI_PROJECT_NAME"
+  DOCKER_PROD_IMAGE: "eu.gcr.io/$GCLOUD_PRODUCTION_PROJECT_NAME/$CI_PROJECT_NAME"
+  DOCKER_DRIVER: overlay
+
+before_script:
+  - export GOOGLE_APPLICATION_CREDENTIALS="$PWD/key.json"
+  - uname -a && pwd && ls -la && env
+
+stages:
+  - test
+  - build
+  - deploy-dev
+
+cache:
+  key: "PIPELINE-$CI_PIPELINE_ID"
+  untracked: true
+  paths:
+    - symfony
+
+# PHP, test develop branch, no push
+build-phpfpm-test:
+  stage: test
+  script:
+    - docker login -u _json_key -p "$(echo $ST_DEVELOPMENT_JSON)" https://eu.gcr.io
+    - docker build -f "docker/php-fpm/Dockerfile" -t "$DOCKER_DEV_IMAGE-php:testing" .
+  only:
+    - develop@team-zh/st-cms-api
+
+# PHP, tests will run in when container is being build
+build-phpfpm:
+  stage: build
+  script:
+    - docker login -u _json_key -p "$(echo $ST_DEVELOPMENT_JSON)" https://eu.gcr.io
+    - docker build -f "docker/php-fpm/Dockerfile" -t "$DOCKER_DEV_IMAGE-php:$CI_COMMIT_REF_NAME" .
+    - docker push "$DOCKER_DEV_IMAGE-php:$CI_COMMIT_REF_NAME"
+  only:
+    - master@team-zh/st-cms-api
+  only:
+    - tags
+
+build-nginx:
+  stage: build
+  script:
+    - docker login -u _json_key -p "$(echo $ST_DEVELOPMENT_JSON)" https://eu.gcr.io
+    - docker build -f "docker/nginx/Dockerfile" -t "$DOCKER_DEV_IMAGE-nginx:$CI_COMMIT_REF_NAME" .
+    - docker push "$DOCKER_DEV_IMAGE-nginx:$CI_COMMIT_REF_NAME"
+  only:
+    - master@team-zh/st-cms-api
+  only:
+    - tags
+
+deploy-test:
+  image: google/cloud-sdk
+  environment:
+    name: development
+    url: http://api.dev.starticket.org/cms
+  stage: deploy-dev
+  script:
+    - echo "deploy test - START"
+    - echo $ST_DEVELOPMENT_JSON > $GOOGLE_APPLICATION_CREDENTIALS
+    - gcloud auth activate-service-account --key-file $GOOGLE_APPLICATION_CREDENTIALS || die "unable to authenticate service account for gcloud"
+    - gcloud --verbosity=debug container clusters get-credentials $GCLOUD_TEST_CLUSTER_NAME --zone europe-west1-b --project $GCLOUD_TEST_PROJECT_NAME
+
+    - echo "./deployment/deploy.sh -i $DOCKER_DEV_IMAGE -r $CI_COMMIT_REF_NAME -s $CI_PROJECT_NAME"
+    - ./deployment/deploy.sh -i $DOCKER_DEV_IMAGE -r $CI_COMMIT_REF_NAME -s $CI_PROJECT_NAME
+
+    - echo "deploy test - END"
+  allow_failure: false
+  only:
+      - develop@team-zh/st-cms-api
+  only:
+      - tags
+#
+#
+#release-production:
+#  stage: release
+#  script:
+#    - docker login -u _json_key -p "$(echo $ST_DEVELOPMENT_JSON)" https://eu.gcr.io
+#    - docker pull "$DOCKER_DEV_IMAGE-nginx:$CI_COMMIT_REF_NAME"
+##    - docker tag "$DOCKER_DEV_IMAGE-nginx:$CI_COMMIT_REF_NAME" "$DOCKER_PROD_IMAGE-nginx:$CI_COMMIT_REF_NAME"
+##    - docker tag "$DOCKER_PROD_IMAGE-nginx:$CI_COMMIT_REF_NAME" "$DOCKER_PROD_IMAGE-nginx:latest"
+##    - docker push "$DOCKER_PROD_IMAGE-nginx:$CI_COMMIT_REF_NAME"
+#
+#    - docker pull "$DOCKER_DEV_IMAGE-php:$CI_COMMIT_REF_NAME"
+##    - docker tag "$DOCKER_DEV_IMAGE-php:$CI_COMMIT_REF_NAME" "$DOCKER_PROD_IMAGE-php:$CI_COMMIT_REF_NAME"
+##    - docker tag "$DOCKER_PROD_IMAGE-php:$CI_COMMIT_REF_NAME" "$DOCKER_PROD_IMAGE-php:latest"
+##    - docker push "$DOCKER_PROD_IMAGE-php:$CI_COMMIT_REF_NAME"
+#  allow_failure: false
+#  when: manual
+#  only:
+#    - master@team-fr/st-cms
+#    - tags
+#
+#
+#deploy-production:
+#  image: google/cloud-sdk
+#  environment:
+#    name: production
+#    url: https://cms.starticket.ch
+#  stage: deploy-prod
+#  script:
+#     - echo "deploy production - START"
+#     - echo "Don't do that! ;)"
+##     - echo $ST_PRODUCTION_JSON > $GOOGLE_APPLICATION_CREDENTIALS
+##     - gcloud auth activate-service-account --key-file $GOOGLE_APPLICATION_CREDENTIALS || die "unable to authenticate service account for gcloud"
+##     - gcloud --verbosity=debug container clusters get-credentials $GCLOUD_PRODUCTION_CLUSTER_NAME --zone europe-west1-b --project $GCLOUD_PRODUCTION_PROJECT_NAME
+##     - ./deployment/deploy.sh -i eu.gcr.io/$GCLOUD_PRODUCTION_PROJECT_NAME/$CI_PROJECT_NAME:$CI_COMMIT_REF_NAME -n $K8S_NAMESPACE -s $CI_PROJECT_NAME
+#     - echo "deploy production - END"
+#  when: manual
+#  only:
+#    - master@team-fr/st-cms
+#    - tags
+#
