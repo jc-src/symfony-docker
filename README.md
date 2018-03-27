@@ -33,4 +33,4 @@ If you wanna login to the php container to use phpunit or php commands:
 ```bash
 docker exec -ti jc-php sh
 ```
-To exit, `exit`
+To exit, `exit` 
