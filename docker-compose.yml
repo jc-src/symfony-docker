@@ -20,8 +20,8 @@ services:
   jc-php:
     container_name: jc-php
     build:
-      context: .
-      dockerfile: docker/php-fpm/Dockerfile
+      context: ./docker/php-fpm
+      dockerfile: Dockerfile
     networks:
       - jc_network
     environment:
@@ -33,25 +33,10 @@ services:
       DB_PASSWORD: symfony
     volumes:
       - ./logs/php-fpm/:/var/log/php
-      - ./symfony:/var/www/symfony
-
-  jc-nginx:
-    container_name: jc-nginx
-    build:
-      context: .
-      dockerfile: docker/nginx/Dockerfile
-    networks:
-      - jc_network
-    environment:
-      FASTCGI_PASS_HOST: jc-php
-      FASTCGI_PASS_PORT: 9000
-    volumes:
-      - ./logs/xdebug/:/var/log/xdebug
-      - ./logs/nginx/:/var/log/nginx
-      - ./symfony:/var/www/symfony
+      - ./symfony:/app
     ports:
       - "80:80"
-    command: /usr/local/bin/start.sh
+      - "443:443"
 
 networks:
   jc_network:

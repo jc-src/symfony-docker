@@ -22,7 +22,6 @@ The Symfony Standard Edition is configured with the following defaults:
 
   * Doctrine ORM/DBAL;
 
-  * Swiftmailer;
 
   * Annotations enabled for everything.
 
@@ -40,16 +39,10 @@ It comes pre-configured with the following bundles:
   * [**SecurityBundle**][9] - Adds security by integrating Symfony's security
     component
 
-  * [**SwiftmailerBundle**][10] - Adds support for Swiftmailer, a library for
-    sending emails
-
   * [**MonologBundle**][11] - Adds support for Monolog, a logging library
 
   * **WebProfilerBundle** (in dev/test env) - Adds profiling functionality and
     the web debug toolbar
-
-  * **SensioDistributionBundle** (in dev/test env) - Adds functionality for
-    configuring and working with Symfony distributions
 
   * [**SensioGeneratorBundle**][13] (in dev env) - Adds code generation
     capabilities
