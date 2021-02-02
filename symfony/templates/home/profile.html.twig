@@ -1,4 +1,14 @@
-{% extends "base.html.twig" %}
+{% extends 'base.html.twig' %}
+
+{% block title %}Change Your Password{% endblock %}
+{% block subtitle %}{% endblock %}
+
 {% block body %}
-{{ value | default('') }}
+<div class="container">
+    <div class="columns is-centered">
+        <div class="column is-5-tablet is-4-desktop is-3-widescreen">
+            {{ form(form) }}
+        </div>
+    </div>
+</div>
 {% endblock %}

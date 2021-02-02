@@ -1,0 +1,40 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{% endblock %}
+{% block subtitle %}{% endblock %}
+
+{% block body %}
+<div class="container">
+    <div class="columns is-centered">
+        <div class="column is-5-tablet is-4-desktop is-3-widescreen">
+        {% if error %}
+            <div class="notification is-danger">
+                {{ error.messageKey|trans(error.messageData, 'security') }}
+            </div>
+        {% endif %}
+
+            <form method="post" class="box">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+                <div class="field">
+                    <label for="username" class="label">Username</label>
+                    <div class="control">
+                        <input type="text" value="{{ last_username }}" name="username" id="username" placeholder="Username" class="input" required autofocus>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="password" class="label">Password</label>
+                    <div class="control">
+                        <input type="password" name="password" id="password" placeholder="*******" class="input" required>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <button class="button is-success">Login</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

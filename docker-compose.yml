@@ -1,43 +1,42 @@
-version: '2'
+version: '3.8'
 
 services:
-
-  jc-mysql:
+  db:
     image: mysql
-    container_name: jc-mysql
     ports:
       - 3306:3306
     networks:
-      - jc_network
+      - backend
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: symfony
-      MYSQL_USER: symfony
-      MYSQL_PASSWORD: symfony
+      MYSQL_DATABASE: "symfony"
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u", "root"]
+      timeout: 5s
+      retries: 10
     volumes:
-      - ./storage/mysql-datadir:/var/lib/mysql
+      - mysql-data:/var/lib/mysql
 
-  jc-php:
-    container_name: jc-php
+  php:
     build:
       context: ./docker/php-fpm
       dockerfile: Dockerfile
+    links:
+      - db
     networks:
-      - jc_network
-    environment:
-      LOG_LEVEL: info
-      DB_HOST: jc-mysql
-      DB_PORT: 3306
-      DB_NAME: symfony
-      DB_USER: symfony
-      DB_PASSWORD: symfony
+      - backend
+    env_file:
+      - ./symfony/.env
     volumes:
       - ./logs/php-fpm/:/var/log/php
       - ./symfony:/app
     ports:
-      - "80:80"
-      - "443:443"
+      - 80:80
+      - 443:443
 
 networks:
-  jc_network:
+  backend:
     driver: bridge
+
+volumes:
+  mysql-data:

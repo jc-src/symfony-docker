@@ -6,7 +6,7 @@ use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * @ORM\Table("user_account")
+ * @ORM\Table("users")
  * @ORM\Entity(repositoryClass=UserRepository::class)
  */
 class User extends AbstractEntity
@@ -14,6 +14,8 @@ class User extends AbstractEntity
     public const STATUS_DISABLED = 0;
     public const STATUS_ACTIVE = 1;
     public const STATUS_PENDING = 2;
+
+    public const DEFAULT_ROLE = 'ROLE_USER';
 
     /**
      * @ORM\Column(type="smallint", name="status", options={"default": 1})
@@ -30,10 +32,10 @@ class User extends AbstractEntity
      */
     protected ?string $password = null;
 
-
-    public function __construct()
-    {
-    }
+    /**
+     * @ORM\Column(type="json")
+     */
+    protected array $roles = [];
 
     public function getStatus(): int
     {
@@ -55,6 +57,21 @@ class User extends AbstractEntity
         $this->username = $username;
     }
 
+    public function getRoles(): array
+    {
+        $roles = $this->roles;
+
+        // guarantee every user at least has ROLE_USER
+        $roles[] = self::DEFAULT_ROLE;
+
+        return array_unique($roles);
+    }
+
+    public function setRoles(array $roles): void
+    {
+        $this->roles = $roles;
+    }
+
     public function getPassword(): ?string
     {
         return $this->password;
@@ -63,5 +80,16 @@ class User extends AbstractEntity
     public function setPassword(?string $password): void
     {
         $this->password = $password;
+    }
+
+    public function getSalt()
+    {
+        // not needed when using the "bcrypt" algorithm in security.yaml
+    }
+
+    public function eraseCredentials()
+    {
+        // If you store any temporary, sensitive data on the user, clear it here
+        // $this->plainPassword = null;
     }
 }
